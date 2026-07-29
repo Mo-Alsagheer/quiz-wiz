@@ -31,8 +31,22 @@ phone?:string
 @Prop()
 image?:string
 
-@Prop({default: false})
+@Prop({default: true})
 isActive:boolean
+
+
+@Prop({
+  select: false,
+})
+passwordResetToken?: string;
+
+@Prop({
+  select: false,
+})
+passwordResetExpires?: Date;
+
+@Prop()
+passwordChangedAt?: Date;
 
     }
 

@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "invalidCredentials": "Invalid email or password",
+    "emailExists": "Email already exists",
+    "passwordChanged": "Password changed successfully"
+  },
+
+  "group": {
+    "created": "Group created successfully",
+    "updated": "Group updated successfully",
+    "deleted": "Group deleted successfully",
+    "notFound": "Group not found"
+  },
+
+  "question": {
+    "created": "Question added successfully",
+    "updated": "Question updated successfully",
+    "deleted": "Question deleted successfully",
+    "notFound": "Question not found"
+  },
+
+  "quiz": {
+    "invalidCode": "Invalid or expired quiz code",
+    "expired": "Quiz code expired",
+    "alreadySubmitted": "You have already completed this quiz",
+    "timeExceeded": "Time limit exceeded",
+    "notFound": "Quiz not found"
+  },
+
+  "result": {
+    "notFound": "Result not found"
+  }
+}

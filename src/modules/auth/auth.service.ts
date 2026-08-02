@@ -10,12 +10,11 @@ import * as bcrypt from 'bcryptjs';
 import { randomInt } from 'crypto';
 
 import { User, UserDocument } from 'src/schemas/user.schema';
-import { RegisterDto } from 'src/dtos/register.dto';
-import { LogInDto } from 'src/dtos/login.dto';
-import { ForgotPasswordDto } from 'src/dtos/forgot-password.dto';
-import { ResetPasswordDto } from 'src/dtos/reset-password.dto';
-import { ChangePasswordDto } from 'src/dtos/change-password.dto';
-
+import { RegisterDto } from './dto/register.dto';
+import { LogInDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -27,13 +26,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-    } = registerDto;
+    const { firstName, lastName, email, password, phone } = registerDto;
 
     const isExist = await this.userModel.findOne({ email });
 
@@ -74,25 +67,16 @@ export class AuthService {
   async login(loginDto: LogInDto) {
     const { email, password } = loginDto;
 
-    const user = await this.userModel
-      .findOne({ email })
-      .select('+password');
+    const user = await this.userModel.findOne({ email }).select('+password');
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Invalid email or password',
-      );
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    const matched = await bcrypt.compare(
-      password,
-      user.password,
-    );
+    const matched = await bcrypt.compare(password, user.password);
 
     if (!matched) {
-      throw new UnauthorizedException(
-        'Invalid email or password',
-      );
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const token = await this.jwtService.signAsync({
@@ -115,7 +99,7 @@ export class AuthService {
     };
   }
 
-    async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const { email } = forgotPasswordDto;
 
     const user = await this.userModel.findOne({ email });
@@ -139,22 +123,13 @@ export class AuthService {
     };
   }
 
- async resetPassword(resetPasswordDto: ResetPasswordDto) {
-  const {
-    email,
-    otp,
-    newPassword,
-    confirmPassword,
-  } = resetPasswordDto;
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { email, otp, newPassword, confirmPassword } = resetPasswordDto;
 
-  if (newPassword !== confirmPassword) {
-    throw new BadRequestException(
-      'Passwords do not match',
-    );
-  }
-    const user = await this.userModel
-      .findOne({ email })
-      .select('+password');
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+    const user = await this.userModel.findOne({ email }).select('+password');
 
     if (!user) {
       throw new BadRequestException('Invalid email or otp');
@@ -165,9 +140,7 @@ export class AuthService {
       !user.passwordResetExpires ||
       user.passwordResetExpires < new Date()
     ) {
-      throw new BadRequestException(
-        'Reset code is invalid or expired',
-      );
+      throw new BadRequestException('Reset code is invalid or expired');
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
@@ -183,44 +156,25 @@ export class AuthService {
     };
   }
 
- async changePassword(
-  userId: string,
-  changePasswordDto: ChangePasswordDto,
-) {
-  const {
-    oldPassword,
-    newPassword,
-    confirmNewPassword,
-  } = changePasswordDto;
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const { oldPassword, newPassword, confirmNewPassword } = changePasswordDto;
 
-  if (newPassword !== confirmNewPassword) {
-    throw new BadRequestException(
-      'Passwords do not match',
-    );
-  }
-    const user = await this.userModel
-      .findById(userId)
-      .select('+password');
+    if (newPassword !== confirmNewPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+    const user = await this.userModel.findById(userId).select('+password');
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const matched = await bcrypt.compare(
-      oldPassword,
-      user.password,
-    );
+    const matched = await bcrypt.compare(oldPassword, user.password);
 
     if (!matched) {
-      throw new BadRequestException(
-        'Old password is incorrect',
-      );
+      throw new BadRequestException('Old password is incorrect');
     }
 
-    const samePassword = await bcrypt.compare(
-      newPassword,
-      user.password,
-    );
+    const samePassword = await bcrypt.compare(newPassword, user.password);
 
     if (samePassword) {
       throw new BadRequestException(

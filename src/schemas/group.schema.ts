@@ -44,7 +44,6 @@ export class Group {
 
 export const GroupSchema = SchemaFactory.createForClass(Group);
 
-
 GroupSchema.index(
   {
     instructorId: 1,

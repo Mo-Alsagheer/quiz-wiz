@@ -13,8 +13,8 @@ import {
 
 import { GroupsService } from './groups.service';
 
-import { CreateGroupDto } from 'src/dtos/create-group.dto';
-import { UpdateGroupDto } from 'src/dtos/update-group.dto';
+import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -26,20 +26,12 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.INSTRUCTOR)
 export class GroupsController {
-  constructor(
-    private readonly groupsService: GroupsService,
-  ) {}
+  constructor(private readonly groupsService: GroupsService) {}
 
   // POST /groups
   @Post()
-  create(
-    @CurrentUser() user: any,
-    @Body() createGroupDto: CreateGroupDto,
-  ) {
-    return this.groupsService.create(
-      user.userId,
-      createGroupDto,
-    );
+  create(@CurrentUser() user: any, @Body() createGroupDto: CreateGroupDto) {
+    return this.groupsService.create(user.userId, createGroupDto);
   }
 
   // GET /groups
@@ -60,14 +52,8 @@ export class GroupsController {
 
   // GET /groups/:id
   @Get(':id')
-  findOne(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ) {
-    return this.groupsService.findOne(
-      id,
-      user.userId,
-    );
+  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.groupsService.findOne(id, user.userId);
   }
 
   // PUT /groups/:id
@@ -77,22 +63,12 @@ export class GroupsController {
     @Param('id') id: string,
     @Body() updateGroupDto: UpdateGroupDto,
   ) {
-    return this.groupsService.update(
-      id,
-      user.userId,
-      updateGroupDto,
-    );
+    return this.groupsService.update(id, user.userId, updateGroupDto);
   }
 
   // DELETE /groups/:id
   @Delete(':id')
-  remove(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ) {
-    return this.groupsService.remove(
-      id,
-      user.userId,
-    );
+  remove(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.groupsService.remove(id, user.userId);
   }
 }

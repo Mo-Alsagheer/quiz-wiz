@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,14 +10,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // Global prefix
+  // Global prefix & URI Versioning (/api/v1/...)
   app.setGlobalPrefix('api');
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
-  // CORS Configuration
+  // Safe CORS Configuration (Prevent wildcard origin with credentials: true)
   const allowedOrigins = configService.get<string>('ALLOWED_ORIGINS');
-  const origins = allowedOrigins
+  const origins = allowedOrigins && allowedOrigins.trim().length > 0
     ? allowedOrigins.split(',').map((o) => o.trim())
-    : '*';
+    : ['http://localhost:3000', 'http://localhost:5173'];
 
   app.enableCors({
     origin: origins,
@@ -46,6 +50,8 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addTag('Health', 'Health check endpoints')
+    .addTag('Auth', 'Authentication endpoints')
+    .addTag('Groups', 'Group management endpoints')
     .addBearerAuth(
       {
         type: 'http',
@@ -60,13 +66,13 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
-  console.log(`🚀 QuizWiz Server running on: http://localhost:${port}/api`);
+  console.log(`🚀 QuizWiz Server running on: http://localhost:${port}/api/v1`);
   console.log(
-    `📚 Swagger Docs available at: http://localhost:${port}/api/docs`,
+    `📚 Swagger Docs available at: http://localhost:${port}/api/v1/docs`,
   );
 }
 bootstrap();

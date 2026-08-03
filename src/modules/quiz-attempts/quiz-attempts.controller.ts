@@ -1,4 +1,4 @@
-import {Body,Controller,Param,Post,UseGuards,} from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { QuizAttemptsService } from './quiz-attempts.service';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -12,20 +12,12 @@ import { SubmitQuizDto } from 'src/dtos/submit-quiz.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.LEARNER)
 export class QuizAttemptsController {
-  constructor(
-    private readonly quizAttemptsService: QuizAttemptsService,
-  ) {}
+  constructor(private readonly quizAttemptsService: QuizAttemptsService) {}
 
   // POST /quizattempts/join
   @Post('join')
-  joinQuiz(
-    @CurrentUser() user: any,
-    @Body() joinQuizDto: JoinQuizDto,
-  ) {
-    return this.quizAttemptsService.joinQuiz(
-      user.userId,
-      joinQuizDto,
-    );
+  joinQuiz(@CurrentUser() user: any, @Body() joinQuizDto: JoinQuizDto) {
+    return this.quizAttemptsService.joinQuiz(user.userId, joinQuizDto);
   }
 
   // POST /quizattempts/:quizId/submit

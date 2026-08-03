@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import {Quiz,QuizSchema,} from 'src/schemas/quiz.schema';
-import {Question,QuestionSchema} from 'src/schemas/question.schema';
-import {Group,GroupSchema} from 'src/schemas/group.schema'
+import { Quiz, QuizSchema } from 'src/schemas/quiz.schema';
+import { Question, QuestionSchema } from 'src/schemas/question.schema';
+import { Group, GroupSchema } from 'src/schemas/group.schema';
 import { QuizzesService } from './quizzes.service';
-import { QuizController } from './quizzes.controller';
+import { QuizzesController } from './quizzes.controller';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -22,7 +23,8 @@ import { QuizController } from './quizzes.controller';
       },
     ]),
   ],
-  controllers: [QuizController],
+  controllers: [QuizzesController],
   providers: [QuizzesService],
+  exports: [QuizzesService],
 })
 export class QuizModule {}

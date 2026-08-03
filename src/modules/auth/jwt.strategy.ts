@@ -34,9 +34,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     if (user.passwordChangedAt && payload.iat) {
-      const changedTimestamp = Math.floor(user.passwordChangedAt.getTime() / 1000);
+      const changedTimestamp = Math.floor(
+        user.passwordChangedAt.getTime() / 1000,
+      );
       if (changedTimestamp > payload.iat) {
-        throw new UnauthorizedException('User recently changed password! Please log in again.');
+        throw new UnauthorizedException(
+          'User recently changed password! Please log in again.',
+        );
       }
     }
 

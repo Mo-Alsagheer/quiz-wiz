@@ -167,9 +167,7 @@ export class GroupsService {
         throw new BadRequestException('One or more learner IDs are invalid');
       }
 
-      group.learners = uniqueLearnerIds.map(
-        (lId) => new Types.ObjectId(lId),
-      );
+      group.learners = uniqueLearnerIds.map((lId) => new Types.ObjectId(lId));
 
       group.learnerCount = uniqueLearnerIds.length;
     }

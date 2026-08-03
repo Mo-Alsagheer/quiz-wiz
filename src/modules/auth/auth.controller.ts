@@ -1,6 +1,5 @@
 import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LogInDto } from './dto/login.dto';

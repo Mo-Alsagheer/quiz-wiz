@@ -4,7 +4,6 @@ import {
   MinLength,
   MaxLength,
   IsEmail,
-  IsOptional,
 } from 'class-validator';
 
 export class LogInDto {
@@ -15,6 +14,6 @@ export class LogInDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
-  @MaxLength(20)
+  @MaxLength(72)
   password: string;
 }

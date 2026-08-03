@@ -27,7 +27,7 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
-  @MaxLength(20)
+  @MaxLength(72)
   password: string;
 
   @IsOptional()

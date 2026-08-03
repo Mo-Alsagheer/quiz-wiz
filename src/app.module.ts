@@ -15,6 +15,7 @@ import { QuizModule } from './modules/quizzes/quizzes.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { ResultsModule } from './modules/results/results.module';
 import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module';
+import { StudentsModule } from './modules/students/students.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module
     QuestionsModule,
     ResultsModule,
     QuizAttemptsModule,
+    StudentsModule,
   ],
   providers: [
     {

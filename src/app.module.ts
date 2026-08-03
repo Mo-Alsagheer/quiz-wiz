@@ -3,10 +3,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { I18nModule, AcceptLanguageResolver } from 'nestjs-i18n';
+import * as path from 'path';
 import * as Joi from 'joi';
+
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GroupsModule } from './modules/groups/groups.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { QuizModule } from './modules/quizzes/quizzes.module';
+import { QuestionsModule } from './modules/questions/questions.module';
+import { ResultsModule } from './modules/results/results.module';
+import { QuizAttemptsModule } from './modules/quiz-attempts/quiz-attempts.module';
 
 @Module({
   imports: [
@@ -32,6 +40,14 @@ import { GroupsModule } from './modules/groups/groups.module';
         limit: 60,
       },
     ]),
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(process.cwd(), 'src/common/i18n'),
+        watch: true,
+      },
+      resolvers: [AcceptLanguageResolver],
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -42,6 +58,11 @@ import { GroupsModule } from './modules/groups/groups.module';
     HealthModule,
     AuthModule,
     GroupsModule,
+    DashboardModule,
+    QuizModule,
+    QuestionsModule,
+    ResultsModule,
+    QuizAttemptsModule,
   ],
   providers: [
     {

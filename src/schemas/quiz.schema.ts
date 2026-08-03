@@ -117,19 +117,21 @@ export class Quiz {
   totalEnrolledStudents: number;
 }
 
-export const QuizSchema =
-  SchemaFactory.createForClass(Quiz);
+export const QuizSchema = SchemaFactory.createForClass(Quiz);
 
 QuizSchema.index({
   instructorId: 1,
   scheduledDateTime: -1,
 });
 
-QuizSchema.index({
-  code: 1,
-}, {
-  unique: true,
-});
+QuizSchema.index(
+  {
+    code: 1,
+  },
+  {
+    unique: true,
+  },
+);
 
 QuizSchema.index({
   status: 1,

@@ -1,4 +1,18 @@
-import { ArrayMaxSize, ArrayMinSize,IsArray,IsBoolean,IsDateString,IsEnum,IsInt,IsNotEmpty,IsOptional,IsString,MaxLength,MinLength,Min,Max,
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  Min,
+  Max,
 } from 'class-validator';
 import { IsIn } from 'class-validator';
 import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
@@ -16,8 +30,8 @@ export class CreateQuizDto {
   @MaxLength(1000)
   description?: string;
 
- @IsIn([5, 10, 15, 20, 30, 45, 60, 90, 120, 180])
-duration: number;
+  @IsIn([5, 10, 15, 20, 30, 45, 60, 90, 120, 180])
+  duration: number;
 
   @IsInt()
   @Min(1)

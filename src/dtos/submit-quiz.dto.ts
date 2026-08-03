@@ -1,9 +1,4 @@
-import {
-  IsArray,
-  IsIn,
-  IsMongoId,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsIn, IsMongoId, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class AnswerDto {

@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export type QuizResultDocument =
-  HydratedDocument<QuizResult>;
+export type QuizResultDocument = HydratedDocument<QuizResult>;
 
 @Schema({
   _id: false,
@@ -33,8 +32,7 @@ export class AnswerResult {
   isCorrect: boolean;
 }
 
-export const AnswerResultSchema =
-  SchemaFactory.createForClass(AnswerResult);
+export const AnswerResultSchema = SchemaFactory.createForClass(AnswerResult);
 
 @Schema({
   timestamps: true,
@@ -101,8 +99,7 @@ export class QuizResult {
   answers: AnswerResult[];
 }
 
-export const QuizResultSchema =
-  SchemaFactory.createForClass(QuizResult);
+export const QuizResultSchema = SchemaFactory.createForClass(QuizResult);
 
 QuizResultSchema.index({
   learnerId: 1,

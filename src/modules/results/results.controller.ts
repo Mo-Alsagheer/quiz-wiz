@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 
 import { ResultsService } from './results.service';
 
@@ -20,9 +14,7 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.LEARNER)
 export class ResultsController {
-  constructor(
-    private readonly resultsService: ResultsService,
-  ) {}
+  constructor(private readonly resultsService: ResultsService) {}
 
   @Get()
   findAll(
@@ -38,13 +30,7 @@ export class ResultsController {
   }
 
   @Get(':id')
-  findOne(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ) {
-    return this.resultsService.findOne(
-      user.userId,
-      id,
-    );
+  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.resultsService.findOne(user.userId, id);
   }
 }

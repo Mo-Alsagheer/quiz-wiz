@@ -3,7 +3,6 @@ import { HydratedDocument, Types } from 'mongoose';
 import { CategoryType } from 'src/common/enums/category-enum';
 import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
 
-
 export type QuestionDocument = HydratedDocument<Question>;
 
 @Schema({
@@ -81,8 +80,7 @@ export class Question {
   instructorId: Types.ObjectId;
 }
 
-export const QuestionSchema =
-  SchemaFactory.createForClass(Question);
+export const QuestionSchema = SchemaFactory.createForClass(Question);
 
 QuestionSchema.index({
   instructorId: 1,

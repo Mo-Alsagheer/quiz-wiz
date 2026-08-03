@@ -1,5 +1,5 @@
 export enum QuizStatus {
-      SCHEDULED = 'SCHEDULED',
+  SCHEDULED = 'SCHEDULED',
   ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
 }

@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-export type QuizAttemptDocument =
-  HydratedDocument<QuizAttempt>;
+export type QuizAttemptDocument = HydratedDocument<QuizAttempt>;
 
 export enum AttemptStatus {
   IN_PROGRESS = 'IN_PROGRESS',
@@ -62,7 +61,4 @@ export class QuizAttempt {
   }[];
 }
 
-export const QuizAttemptSchema =
-  SchemaFactory.createForClass(
-    QuizAttempt,
-  );
+export const QuizAttemptSchema = SchemaFactory.createForClass(QuizAttempt);

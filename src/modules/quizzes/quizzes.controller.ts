@@ -2,54 +2,68 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Put,
-  Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
-
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { QuizzesService } from './quizzes.service';
-
 import { CreateQuizDto } from 'src/dtos/create-quiz.dto';
 import { UpdateQuizDto } from 'src/dtos/update-quiz.dto';
-
+import { QuizStatus } from 'src/common/enums/quiz.status.enum';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-
 import { UserRole } from 'src/common/enums/user-role.enum';
-import { QuizStatus } from 'src/common/enums/quiz.status.enum';
+import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
+import { ParseObjectIdPipe } from 'src/common/pipes/parse-object-id.pipe';
 
+@ApiTags('Quizzes')
+@ApiBearerAuth('bearer-auth')
 @Controller('quizzes')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.INSTRUCTOR)
-export class QuizController {
-  constructor(
-    private readonly quizService: QuizzesService,
-  ) {}
+export class QuizzesController {
+  constructor(private readonly quizzesService: QuizzesService) {}
 
+  // POST /quizzes
+  @ApiOperation({
+    summary: 'Create and schedule a new quiz with auto-generated code',
+  })
+  @ApiResponse({ status: 201, description: 'Quiz created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or insufficient questions',
+  })
   @Post()
   create(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Body() createQuizDto: CreateQuizDto,
   ) {
-    return this.quizService.create(
-      user.userId,
-      createQuizDto,
-    );
+    return this.quizzesService.create(user.userId, createQuizDto);
   }
 
+  // GET /quizzes
+  @ApiOperation({
+    summary: 'Get all quizzes for instructor with optional status filter',
+  })
+  @ApiResponse({ status: 200, description: 'Paginated list of quizzes' })
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: JwtPayload,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @Query('status') status?: QuizStatus,
   ) {
-    return this.quizService.findAll(
+    return this.quizzesService.findAll(
       user.userId,
       Number(page),
       Number(limit),
@@ -57,41 +71,57 @@ export class QuizController {
     );
   }
 
+  // GET /quizzes/:id
+  @ApiOperation({
+    summary: 'Get single quiz by ID with assigned groups and questions',
+  })
+  @ApiResponse({ status: 200, description: 'Quiz details' })
+  @ApiResponse({ status: 404, description: 'Quiz not found' })
   @Get(':id')
   findOne(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseObjectIdPipe) id: string,
   ) {
-    return this.quizService.findOne(
-      id,
-      user.userId,
-    );
+    return this.quizzesService.findOne(id, user.userId);
   }
 
+  // PUT /quizzes/:id
+  @ApiOperation({
+    summary:
+      'Update quiz title, duration, description (locked after scheduled time)',
+  })
+  @ApiResponse({ status: 200, description: 'Quiz updated successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Quiz cannot be edited after its scheduled time has passed',
+  })
+  @ApiResponse({ status: 404, description: 'Quiz not found' })
   @Put(':id')
   update(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseObjectIdPipe) id: string,
     @Body() updateQuizDto: UpdateQuizDto,
   ) {
-    return this.quizService.update(
-      id,
-      user.userId,
-      updateQuizDto,
-    );
+    return this.quizzesService.update(id, user.userId, updateQuizDto);
   }
 
+  // POST /quizzes/:id/reassign
+  @ApiOperation({
+    summary:
+      'Reassign an expired quiz with a new scheduled date and access code',
+  })
+  @ApiResponse({ status: 200, description: 'Quiz reassigned successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Quiz not yet expired or invalid date',
+  })
+  @ApiResponse({ status: 404, description: 'Quiz not found' })
   @Post(':id/reassign')
   reassign(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-    @Body('scheduledDateTime')
-    scheduledDateTime: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body('scheduledDateTime') scheduledDateTime: string,
   ) {
-    return this.quizService.reassign(
-      id,
-      user.userId,
-      scheduledDateTime,
-    );
+    return this.quizzesService.reassign(id, user.userId, scheduledDateTime);
   }
 }

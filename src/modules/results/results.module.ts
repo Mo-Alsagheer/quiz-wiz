@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ResultsController } from './results.controller';
 import { ResultsService } from './results.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { QuizResult , QuizResultSchema } from 'src/schemas/quiz-result.schema';
+import { QuizResult, QuizResultSchema } from 'src/schemas/quiz-result.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -16,4 +16,3 @@ import { QuizResult , QuizResultSchema } from 'src/schemas/quiz-result.schema';
   providers: [ResultsService],
 })
 export class ResultsModule {}
-

@@ -1,141 +1,144 @@
-import { Injectable,NotFoundException , BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Question, QuestionDocument } from 'src/schemas/question.schema';
+import { QuizResult, QuizResultDocument } from 'src/schemas/quiz-result.schema';
 import { CreateQuestionDto } from 'src/dtos/create-question.dto';
-import { CategoryType } from 'src/common/enums/category-enum';
-import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
 import { UpdateQuestionDto } from 'src/dtos/update-question.dto';
+import { QuestionQueryDto } from './dto/question-query.dto';
+
 @Injectable()
-export class QuestionsService {   
-constructor(
-  @InjectModel(Question.name)
-  private readonly questionModel: Model<QuestionDocument>,
-) {}
-async create(
-  instructorId: string,
-  createQuestionDto: CreateQuestionDto,
-) {
-  const question = await this.questionModel.create({
-    ...createQuestionDto,
-    instructorId,
-  });
+export class QuestionsService {
+  constructor(
+    @InjectModel(Question.name)
+    private readonly questionModel: Model<QuestionDocument>,
+    @InjectModel(QuizResult.name)
+    private readonly quizResultModel: Model<QuizResultDocument>,
+  ) {}
 
-  return question;
-}
+  async create(instructorId: string, createQuestionDto: CreateQuestionDto) {
+    const question = await this.questionModel.create({
+      ...createQuestionDto,
+      instructorId,
+    });
 
-
-async findAll(
-  instructorId: string,
-  page = 1,
-  limit = 10,
-  difficultyLevel?: DifficultyLevel,
-  categoryType?: CategoryType,
-  search?: string,
-) {
-  const filter: Record<string, any> = {
-    instructorId,
-  };
-
-  if (difficultyLevel) {
-    filter.difficultyLevel = difficultyLevel;
+    return question;
   }
 
-  if (categoryType) {
-    filter.categoryType = categoryType;
-  }
+  async findAll(instructorId: string, queryDto: QuestionQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      difficultyLevel,
+      categoryType,
+      search,
+    } = queryDto;
 
-  if (search) {
-    filter.title = {
-      $regex: search,
-      $options: 'i',
+    const clampedLimit = Math.min(Math.max(limit, 1), 100);
+    const clampedPage = Math.max(page, 1);
+
+    const filter: Record<string, any> = {
+      instructorId,
+    };
+
+    if (difficultyLevel) {
+      filter.difficultyLevel = difficultyLevel;
+    }
+
+    if (categoryType) {
+      filter.categoryType = categoryType;
+    }
+
+    if (search) {
+      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.title = {
+        $regex: sanitizedSearch,
+        $options: 'i',
+      };
+    }
+
+    const total = await this.questionModel.countDocuments(filter);
+
+    const questions = await this.questionModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .skip((clampedPage - 1) * clampedLimit)
+      .limit(clampedLimit);
+
+    return {
+      data: questions,
+      pagination: {
+        total,
+        page: clampedPage,
+        limit: clampedLimit,
+        totalPages: Math.ceil(total / clampedLimit),
+      },
     };
   }
 
-  const total =
-    await this.questionModel.countDocuments(filter);
+  async findOne(id: string, instructorId: string) {
+    const question = await this.questionModel.findOne({
+      _id: id,
+      instructorId,
+    });
 
-  const questions = await this.questionModel
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit);
+    if (!question) {
+      throw new NotFoundException('Question not found');
+    }
 
-  return {
-    data: questions,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-} 
-
-async findOne(
-  id: string,
-  instructorId: string,
-) {
-  const question = await this.questionModel.findOne({
-    _id: id,
-    instructorId,
-  });
-
-  if (!question) {
-    throw new NotFoundException(
-      'Question not found',
-    );
+    return question;
   }
 
-  return question;
-}
+  async update(
+    id: string,
+    instructorId: string,
+    updateQuestionDto: UpdateQuestionDto,
+  ) {
+    const question = await this.questionModel.findOne({
+      _id: id,
+      instructorId,
+    });
 
+    if (!question) {
+      throw new NotFoundException('Question not found');
+    }
 
-async update(
-  id: string,
-  instructorId: string,
-  updateQuestionDto: UpdateQuestionDto,
-) {
-  const question = await this.questionModel.findOne({
-    _id: id,
-    instructorId,
-  });
+    Object.assign(question, updateQuestionDto);
 
-  if (!question) {
-    throw new NotFoundException(
-      'Question not found',
-    );
+    await question.save();
+
+    return question;
   }
 
-  Object.assign(question, updateQuestionDto);
+  async remove(id: string, instructorId: string) {
+    const question = await this.questionModel.findOne({
+      _id: id,
+      instructorId,
+    });
 
-  await question.save();
+    if (!question) {
+      throw new NotFoundException('Question not found');
+    }
 
-  return question;
-}
+    // Guard against deleting questions used in completed quizzes
+    const isUsedInCompletedQuizzes = await this.quizResultModel.exists({
+      'answers.questionId': id,
+    });
 
+    if (isUsedInCompletedQuizzes) {
+      throw new BadRequestException(
+        'Cannot delete question used in completed quizzes',
+      );
+    }
 
-async remove(
-  id: string,
-  instructorId: string,
-) {
-  const question = await this.questionModel.findOne({
-    _id: id,
-    instructorId,
-  });
+    await question.deleteOne();
 
-  if (!question) {
-    throw new NotFoundException(
-      'Question not found',
-    );
+    return {
+      message: 'Question deleted successfully',
+    };
   }
-
-
-  await question.deleteOne();
-
-  return {
-    message: 'Question deleted successfully',
-  };
-}
-
 }

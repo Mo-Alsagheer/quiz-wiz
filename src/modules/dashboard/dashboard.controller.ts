@@ -6,21 +6,14 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 import { DashboardService } from './dashboard.service';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
-
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.LEARNER)
 export class DashboardController {
-  constructor(
-    private readonly dashboardService: DashboardService,
-  ) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('learner')
-  learnerDashboard(
-    @CurrentUser() user: any,
-  ) {
-    return this.dashboardService.learnerDashboard(
-      user.userId,
-    );
+  learnerDashboard(@CurrentUser() user: any) {
+    return this.dashboardService.learnerDashboard(user.userId);
   }
 }

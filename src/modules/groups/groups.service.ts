@@ -10,6 +10,7 @@ import { User, UserDocument } from 'src/schemas/user.schema';
 import { UserRole } from 'src/common/enums/user-role.enum';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class GroupsService {
@@ -21,7 +22,10 @@ export class GroupsService {
   ) {}
 
   async create(instructorId: string, createGroupDto: CreateGroupDto) {
-    const { groupName, learners } = createGroupDto;
+    const { groupName, learners = [] } = createGroupDto;
+
+    // Deduplicate learner IDs
+    const uniqueLearnerIds = Array.from(new Set(learners));
 
     // Check duplicate group name for the same instructor
     const existingGroup = await this.groupModel.findOne({
@@ -33,37 +37,52 @@ export class GroupsService {
       throw new BadRequestException('Group name already exists');
     }
 
-    // Validate learners
+    // Validate learners exist and are LEARNER role
     const learnerDocuments = await this.userModel.find({
-      _id: { $in: learners },
+      _id: { $in: uniqueLearnerIds },
       role: UserRole.LEARNER,
     });
 
-    if (learnerDocuments.length !== learners.length) {
+    if (learnerDocuments.length !== uniqueLearnerIds.length) {
       throw new BadRequestException('One or more learner IDs are invalid');
     }
 
-    const group = await this.groupModel.create({
-      groupName,
-      instructorId,
-      learners,
-      learnerCount: learners.length,
-    });
+    try {
+      const group = await this.groupModel.create({
+        groupName,
+        instructorId,
+        learners: uniqueLearnerIds,
+        learnerCount: uniqueLearnerIds.length,
+      });
 
-    return await this.groupModel
-      .findById(group._id)
-      .populate('learners', 'firstName lastName email')
-      .populate('instructorId', 'firstName lastName email');
+      return await this.groupModel
+        .findById(group._id)
+        .populate('learners', 'firstName lastName email')
+        .populate('instructorId', 'firstName lastName email');
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new BadRequestException('Group name already exists');
+      }
+      throw error;
+    }
   }
 
-  async findAll(instructorId: string, page = 1, limit = 10, search?: string) {
+  async findAll(instructorId: string, paginationDto: PaginationDto) {
+    const { page = 1, limit = 10, search } = paginationDto;
+
+    // Clamp limit to upper bound of 100
+    const clampedLimit = Math.min(Math.max(limit, 1), 100);
+    const clampedPage = Math.max(page, 1);
+
     const filter: Record<string, any> = {
       instructorId,
     };
 
     if (search) {
+      // Escape special characters in search regex to prevent ReDoS
+      const sanitizedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.groupName = {
-        $regex: search,
+        $regex: sanitizedSearch,
         $options: 'i',
       };
     }
@@ -74,19 +93,20 @@ export class GroupsService {
       .find(filter)
       .populate('learners', 'firstName lastName email')
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip((clampedPage - 1) * clampedLimit)
+      .limit(clampedLimit);
 
     return {
       data: groups,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: clampedPage,
+        limit: clampedLimit,
+        totalPages: Math.ceil(total / clampedLimit),
       },
     };
   }
+
   async findOne(id: string, instructorId: string) {
     const group = await this.groupModel
       .findOne({
@@ -134,25 +154,34 @@ export class GroupsService {
       group.groupName = updateGroupDto.groupName;
     }
 
-    // Validate learners
+    // Validate and deduplicate learners if provided
     if (updateGroupDto.learners) {
+      const uniqueLearnerIds = Array.from(new Set(updateGroupDto.learners));
+
       const learners = await this.userModel.find({
-        _id: { $in: updateGroupDto.learners },
+        _id: { $in: uniqueLearnerIds },
         role: UserRole.LEARNER,
       });
 
-      if (learners.length !== updateGroupDto.learners.length) {
+      if (learners.length !== uniqueLearnerIds.length) {
         throw new BadRequestException('One or more learner IDs are invalid');
       }
 
-      group.learners = updateGroupDto.learners.map(
-        (id) => new Types.ObjectId(id),
+      group.learners = uniqueLearnerIds.map(
+        (lId) => new Types.ObjectId(lId),
       );
 
-      group.learnerCount = updateGroupDto.learners.length;
+      group.learnerCount = uniqueLearnerIds.length;
     }
 
-    await group.save();
+    try {
+      await group.save();
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        throw new BadRequestException('Group name already exists');
+      }
+      throw error;
+    }
 
     return this.groupModel
       .findById(group._id)

@@ -1,7 +1,7 @@
 import { IsArray, IsIn, IsMongoId, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class AnswerDto {
+class AnswerOptionDto {
   @IsMongoId()
   questionId: string;
 
@@ -12,6 +12,6 @@ class AnswerDto {
 export class SubmitQuizDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => AnswerDto)
-  answers: AnswerDto[];
+  @Type(() => AnswerOptionDto)
+  answers: AnswerOptionDto[];
 }

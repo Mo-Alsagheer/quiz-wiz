@@ -14,7 +14,7 @@ import {
 import { Type } from 'class-transformer';
 import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
 import { CategoryType } from 'src/common/enums/category-enum';
-import { AnswerDto } from './answer-dto';
+import { AnswerDto } from './answer.dto';
 
 export class CreateQuestionDto {
   @IsNotEmpty()

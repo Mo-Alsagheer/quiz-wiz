@@ -1,104 +1,108 @@
-import { Injectable } from '@nestjs/common';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Quiz, QuizDocument } from 'src/schemas/quiz.schema';
 import {
   QuizAttempt,
   QuizAttemptDocument,
-  AttemptStatus,
 } from 'src/schemas/quiz-attempt.schema';
-import { JoinQuizDto } from 'src/dtos/join-quiz.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Quiz, QuizDocument } from 'src/schemas/quiz.schema';
-import { Model, Types } from 'mongoose';
 import { QuizResult, QuizResultDocument } from 'src/schemas/quiz-result.schema';
+import { Group, GroupDocument } from 'src/schemas/group.schema';
 import { Question, QuestionDocument } from 'src/schemas/question.schema';
-import { SubmitQuizDto } from 'src/dtos/submit-quiz.dto';
-import { I18nService } from 'nestjs-i18n';
+import { JoinQuizDto } from 'src/modules/quizzes/dto/join-quiz.dto';
+import { SubmitQuizDto } from './dto/submit-quiz.dto';
 
 @Injectable()
 export class QuizAttemptsService {
   constructor(
-    @InjectModel(QuizAttempt.name)
-    private readonly quizAttemptModel: Model<QuizAttemptDocument>,
-
     @InjectModel(Quiz.name)
     private readonly quizModel: Model<QuizDocument>,
 
-    @InjectModel(Question.name)
-    private readonly questionModel: Model<QuestionDocument>,
+    @InjectModel(QuizAttempt.name)
+    private readonly quizAttemptModel: Model<QuizAttemptDocument>,
 
     @InjectModel(QuizResult.name)
     private readonly quizResultModel: Model<QuizResultDocument>,
 
-    private readonly i18n: I18nService,
+    @InjectModel(Group.name)
+    private readonly groupModel: Model<GroupDocument>,
+
+    @InjectModel(Question.name)
+    private readonly questionModel: Model<QuestionDocument>,
   ) {}
 
+  // JOIN QUIZ BY ACCESS CODE (LEARNER ONLY)
   async joinQuiz(learnerId: string, joinQuizDto: JoinQuizDto) {
     const { code } = joinQuizDto;
 
-    const quiz = await this.quizModel.findOne({ code }).populate('questions');
+    const quiz = await this.quizModel.findOne({ code });
 
     if (!quiz) {
-      throw new NotFoundException(
-        await this.i18n.translate('common.quiz.invalidCode'),
-      );
+      throw new NotFoundException('Invalid quiz access code');
     }
 
     const now = new Date();
 
     if (now < quiz.codeValidFrom || now > quiz.codeValidUntil) {
       throw new BadRequestException(
-        await this.i18n.translate('common.quiz.expired'),
+        'Quiz access code is expired or not active',
       );
     }
 
-    const quizEndTime = new Date(
-      quiz.scheduledDateTime.getTime() + quiz.duration * 60 * 1000,
-    );
-
-    if (now > quizEndTime) {
-      throw new BadRequestException(
-        await this.i18n.translate('common.quiz.timeExceeded'),
-      );
-    }
-
-    const submittedAttempt = await this.quizAttemptModel.findOne({
-      quizId: quiz._id,
-      learnerId,
-      status: AttemptStatus.SUBMITTED,
+    // Check if learner is in assigned groups
+    const isEnrolled = await this.groupModel.exists({
+      _id: { $in: quiz.assignedToGroups },
+      learners: new Types.ObjectId(learnerId),
     });
 
-    if (submittedAttempt) {
+    if (!isEnrolled) {
       throw new BadRequestException(
-        await this.i18n.translate('common.quiz.alreadySubmitted'),
+        'You are not enrolled in an assigned group for this quiz',
       );
     }
 
+    // Check if learner already completed
+    const alreadyCompleted = await this.quizResultModel.exists({
+      quizId: quiz._id,
+      learnerId: new Types.ObjectId(learnerId),
+    });
+
+    if (alreadyCompleted) {
+      throw new BadRequestException('You have already submitted this quiz');
+    }
+
+    // Create or resume attempt
     let attempt = await this.quizAttemptModel.findOne({
       quizId: quiz._id,
-      learnerId,
-      status: AttemptStatus.IN_PROGRESS,
+      learnerId: new Types.ObjectId(learnerId),
     });
 
     if (!attempt) {
+      const attemptStartTime = new Date();
+      const attemptEndTime = new Date(
+        attemptStartTime.getTime() + quiz.duration * 60 * 1000,
+      );
+
       attempt = await this.quizAttemptModel.create({
         quizId: quiz._id,
-        learnerId,
-        attemptStartTime: now,
-        attemptEndTime: quizEndTime,
-        status: AttemptStatus.IN_PROGRESS,
+        learnerId: new Types.ObjectId(learnerId),
+        attemptStartTime,
+        attemptEndTime,
         answers: [],
       });
     }
 
-    const questions = (quiz.questions as any[]).map((question) => {
-      const q = question.toObject();
-      delete q.correctAnswer;
-      return q;
-    });
+    // Fetch questions without correct option
+    const questions = await this.questionModel
+      .find({ _id: { $in: quiz.questions } })
+      .select('title description answers difficultyLevel categoryType');
 
     return {
       attemptId: attempt._id,
-      attemptEndTime: attempt.attemptEndTime,
       quiz: {
         id: quiz._id,
         title: quiz.title,
@@ -106,111 +110,88 @@ export class QuizAttemptsService {
         duration: quiz.duration,
         numberOfQuestions: quiz.numberOfQuestions,
         scorePerQuestion: quiz.scorePerQuestion,
+        endTime: attempt.attemptEndTime,
       },
       questions,
     };
   }
 
+  // SUBMIT QUIZ ATTEMPT (LEARNER ONLY)
   async submitQuiz(
     learnerId: string,
-    quizId: string,
+    attemptId: string,
     submitQuizDto: SubmitQuizDto,
   ) {
     const attempt = await this.quizAttemptModel.findOne({
-      quizId,
-      learnerId,
-      status: AttemptStatus.IN_PROGRESS,
+      _id: attemptId,
+      learnerId: new Types.ObjectId(learnerId),
     });
 
     if (!attempt) {
-      throw new NotFoundException(
-        await this.i18n.translate('common.quiz.attemptNotFound'),
-      );
+      throw new NotFoundException('Quiz attempt not found');
     }
 
-    const now = new Date();
-
-    if (now > attempt.attemptEndTime) {
-      throw new BadRequestException(
-        await this.i18n.translate('common.quiz.timeExceeded'),
-      );
-    }
-
-    const quiz = await this.quizModel.findById(quizId);
+    const quiz = await this.quizModel.findById(attempt.quizId);
 
     if (!quiz) {
-      throw new NotFoundException(
-        await this.i18n.translate('common.quiz.notFound'),
-      );
+      throw new NotFoundException('Quiz not found');
+    }
+
+    // Check existing result
+    const existingResult = await this.quizResultModel.exists({
+      quizId: quiz._id,
+      learnerId: new Types.ObjectId(learnerId),
+    });
+
+    if (existingResult) {
+      throw new BadRequestException('Quiz result already recorded');
     }
 
     const questions = await this.questionModel.find({
       _id: { $in: quiz.questions },
     });
 
-    const results = [];
-    let correctAnswers = 0;
+    const questionMap = new Map(questions.map((q) => [q._id.toString(), q]));
 
-    for (const answer of submitQuizDto.answers) {
-      const question = questions.find(
-        (q) => q._id.toString() === answer.questionId,
-      );
-
-      if (!question) {
-        continue;
-      }
-
-      const isCorrect = question.correctAnswer === answer.selectedOption;
+    let correctCount = 0;
+    const gradedAnswers = submitQuizDto.answers.map((ans) => {
+      const q = questionMap.get(ans.questionId);
+      const isCorrect = q ? q.correctAnswer === ans.selectedOption : false;
 
       if (isCorrect) {
-        correctAnswers++;
+        correctCount++;
       }
 
-      results.push({
-        questionId: question._id,
-        selectedOption: answer.selectedOption,
-        correctOption: question.correctAnswer,
+      return {
+        questionId: new Types.ObjectId(ans.questionId),
+        selectedOption: ans.selectedOption,
+        correctOption: (q?.correctAnswer || 'A') as 'A' | 'B' | 'C' | 'D',
         isCorrect,
-      });
-    }
+      };
+    });
 
-    const totalScore = correctAnswers * quiz.scorePerQuestion;
-
-    const scorePercentage =
-      (totalScore / (quiz.numberOfQuestions * quiz.scorePerQuestion)) * 100;
-
-    const timeTaken = Math.floor(
+    const totalScore = correctCount * quiz.scorePerQuestion;
+    const maxScore = quiz.numberOfQuestions * quiz.scorePerQuestion;
+    const scorePercentage = (totalScore / maxScore) * 100;
+    const now = new Date();
+    const timeTaken = Math.round(
       (now.getTime() - attempt.attemptStartTime.getTime()) / 1000,
     );
 
-    const quizResult = await this.quizResultModel.create({
+    const result = await this.quizResultModel.create({
       quizId: quiz._id,
-      learnerId,
+      learnerId: new Types.ObjectId(learnerId),
       attemptId: attempt._id,
-      submittedAt: now,
       totalScore,
       scorePercentage,
       timeTaken,
-      answers: results,
+      answers: gradedAnswers,
+      submittedAt: now,
     });
 
-    attempt.status = AttemptStatus.SUBMITTED;
+    // Cleanup attempt
+    await attempt.deleteOne();
 
-    attempt.answers = submitQuizDto.answers.map((a) => ({
-      questionId: new Types.ObjectId(a.questionId),
-      selectedOption: a.selectedOption,
-    }));
-
-    await attempt.save();
-
-    return {
-      resultId: quizResult._id,
-      totalScore,
-      scorePercentage,
-      correctAnswers,
-      totalQuestions: quiz.numberOfQuestions,
-      timeTaken,
-      answers: results,
-    };
+    return result;
   }
 }

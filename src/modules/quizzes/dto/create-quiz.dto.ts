@@ -13,8 +13,8 @@ import {
   MinLength,
   Min,
   Max,
+  IsIn,
 } from 'class-validator';
-import { IsIn } from 'class-validator';
 import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
 import { CategoryType } from 'src/common/enums/category-enum';
 

@@ -7,8 +7,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Question, QuestionDocument } from 'src/schemas/question.schema';
 import { QuizResult, QuizResultDocument } from 'src/schemas/quiz-result.schema';
-import { CreateQuestionDto } from 'src/dtos/create-question.dto';
-import { UpdateQuestionDto } from 'src/dtos/update-question.dto';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionQueryDto } from './dto/question-query.dto';
 
 @Injectable()

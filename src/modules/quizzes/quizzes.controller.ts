@@ -15,14 +15,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { QuizzesService } from './quizzes.service';
-import { CreateQuizDto } from 'src/dtos/create-quiz.dto';
-import { UpdateQuizDto } from 'src/dtos/update-quiz.dto';
-import { QuizStatus } from 'src/common/enums/quiz.status.enum';
+import { CreateQuizDto } from './dto/create-quiz.dto';
+import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UserRole } from 'src/common/enums/user-role.enum';
+import { QuizStatus } from 'src/common/enums/quiz.status.enum';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
 import { ParseObjectIdPipe } from 'src/common/pipes/parse-object-id.pipe';
 
@@ -59,16 +59,11 @@ export class QuizzesController {
   @Get()
   findAll(
     @CurrentUser() user: JwtPayload,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
     @Query('status') status?: QuizStatus,
   ) {
-    return this.quizzesService.findAll(
-      user.userId,
-      Number(page),
-      Number(limit),
-      status,
-    );
+    return this.quizzesService.findAll(user.userId, page, limit, status);
   }
 
   // GET /quizzes/:id

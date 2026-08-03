@@ -4,11 +4,11 @@ import { Model } from 'mongoose';
 import { Quiz, QuizDocument } from 'src/schemas/quiz.schema';
 import { Group, GroupDocument } from 'src/schemas/group.schema';
 import { QuestionDocument, Question } from 'src/schemas/question.schema';
-import { CreateQuizDto } from 'src/dtos/create-quiz.dto';
+import { CreateQuizDto } from './dto/create-quiz.dto';
+import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { QuizStatus } from 'src/common/enums/quiz.status.enum';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SortOrder } from 'mongoose';
-import { UpdateQuizDto } from 'src/dtos/update-quiz.dto';
 
 @Injectable()
 export class QuizzesService {

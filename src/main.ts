@@ -2,6 +2,8 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -9,6 +11,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Security HTTP Headers
+  app.use(helmet());
 
   // Global prefix & URI Versioning (/api/v1/...)
   app.setGlobalPrefix('api');
@@ -19,9 +24,10 @@ async function bootstrap() {
 
   // Safe CORS Configuration (Prevent wildcard origin with credentials: true)
   const allowedOrigins = configService.get<string>('ALLOWED_ORIGINS');
-  const origins = allowedOrigins && allowedOrigins.trim().length > 0
-    ? allowedOrigins.split(',').map((o) => o.trim())
-    : ['http://localhost:3000', 'http://localhost:5173'];
+  const origins =
+    allowedOrigins && allowedOrigins.trim().length > 0
+      ? allowedOrigins.split(',').map((o) => o.trim())
+      : ['http://localhost:3000', 'http://localhost:5173'];
 
   app.enableCors({
     origin: origins,
@@ -52,6 +58,9 @@ async function bootstrap() {
     .addTag('Health', 'Health check endpoints')
     .addTag('Auth', 'Authentication endpoints')
     .addTag('Groups', 'Group management endpoints')
+    .addTag('Questions', 'Question bank management endpoints')
+    .addTag('Quizzes', 'Quiz management and code generation endpoints')
+    .addTag('Students', 'Student management endpoints')
     .addBearerAuth(
       {
         type: 'http',

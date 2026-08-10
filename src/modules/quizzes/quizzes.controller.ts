@@ -17,6 +17,7 @@ import {
 import { QuizzesService } from './quizzes.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
+import { ReassignQuizDto } from './dto/reassign-quiz.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -115,8 +116,12 @@ export class QuizzesController {
   reassign(
     @CurrentUser() user: JwtPayload,
     @Param('id', ParseObjectIdPipe) id: string,
-    @Body('scheduledDateTime') scheduledDateTime: string,
+    @Body() reassignQuizDto: ReassignQuizDto,
   ) {
-    return this.quizzesService.reassign(id, user.userId, scheduledDateTime);
+    return this.quizzesService.reassign(
+      id,
+      user.userId,
+      reassignQuizDto.scheduledDateTime,
+    );
   }
 }

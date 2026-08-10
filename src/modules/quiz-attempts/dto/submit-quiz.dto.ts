@@ -1,15 +1,40 @@
-import { IsArray, IsIn, IsMongoId, ValidateNested } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
-class AnswerOptionDto {
+export class AnswerOptionDto {
+  @ApiProperty({ description: 'Target question ID' })
   @IsMongoId()
   questionId: string;
 
-  @IsIn(['A', 'B', 'C', 'D', null])
-  selectedOption: 'A' | 'B' | 'C' | 'D' | null;
+  @ApiPropertyOptional({
+    description:
+      'Selected option key for MCQ/True-False questions (e.g. A, B, C, D)',
+    example: 'A',
+  })
+  @IsOptional()
+  @IsString()
+  selectedOption?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Submitted text response for Essay questions',
+  })
+  @IsOptional()
+  @IsString()
+  essayAnswer?: string | null;
 }
 
 export class SubmitQuizDto {
+  @ApiProperty({
+    type: [AnswerOptionDto],
+    description: 'List of submitted question answers',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AnswerOptionDto)

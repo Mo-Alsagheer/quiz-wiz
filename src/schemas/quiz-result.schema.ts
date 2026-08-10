@@ -15,16 +15,22 @@ export class AnswerResult {
   questionId: Types.ObjectId;
 
   @Prop({
-    enum: ['A', 'B', 'C', 'D', null],
+    type: String,
     default: null,
   })
-  selectedOption: 'A' | 'B' | 'C' | 'D' | null;
+  selectedOption?: string | null;
 
   @Prop({
-    enum: ['A', 'B', 'C', 'D'],
-    required: true,
+    type: String,
+    default: null,
   })
-  correctOption: 'A' | 'B' | 'C' | 'D';
+  correctOption?: string | null;
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  essayAnswer?: string | null;
 
   @Prop({
     required: true,

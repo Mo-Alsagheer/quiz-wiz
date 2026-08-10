@@ -13,11 +13,13 @@ import {
 import { QuizResult, QuizResultDocument } from 'src/schemas/quiz-result.schema';
 import { Group, GroupDocument } from 'src/schemas/group.schema';
 import { Question, QuestionDocument } from 'src/schemas/question.schema';
+import { QuestionType } from 'src/common/enums/question-type.enum';
 import { JoinQuizDto } from 'src/modules/quizzes/dto/join-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
+import { IQuizAttemptsService } from './interfaces/quiz-attempts-service.interface';
 
 @Injectable()
-export class QuizAttemptsService {
+export class QuizAttemptsService implements IQuizAttemptsService {
   constructor(
     @InjectModel(Quiz.name)
     private readonly quizModel: Model<QuizDocument>,
@@ -99,7 +101,7 @@ export class QuizAttemptsService {
     // Fetch questions without correct option
     const questions = await this.questionModel
       .find({ _id: { $in: quiz.questions } })
-      .select('title description answers difficultyLevel categoryType');
+      .select('type title description answers difficultyLevel categoryType');
 
     return {
       attemptId: attempt._id,
@@ -156,7 +158,17 @@ export class QuizAttemptsService {
     let correctCount = 0;
     const gradedAnswers = submitQuizDto.answers.map((ans) => {
       const q = questionMap.get(ans.questionId);
-      const isCorrect = q ? q.correctAnswer === ans.selectedOption : false;
+      let isCorrect = false;
+
+      if (q) {
+        if (q.type === QuestionType.ESSAY) {
+          isCorrect = Boolean(
+            ans.essayAnswer && ans.essayAnswer.trim().length > 0,
+          );
+        } else {
+          isCorrect = q.correctAnswer === ans.selectedOption;
+        }
+      }
 
       if (isCorrect) {
         correctCount++;
@@ -164,8 +176,9 @@ export class QuizAttemptsService {
 
       return {
         questionId: new Types.ObjectId(ans.questionId),
-        selectedOption: ans.selectedOption,
-        correctOption: (q?.correctAnswer || 'A') as 'A' | 'B' | 'C' | 'D',
+        selectedOption: ans.selectedOption || null,
+        correctOption: q?.correctAnswer || null,
+        essayAnswer: ans.essayAnswer || null,
         isCorrect,
       };
     });

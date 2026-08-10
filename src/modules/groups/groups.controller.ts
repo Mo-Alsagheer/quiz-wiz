@@ -9,6 +9,12 @@ import {
   UseGuards,
   Post,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { GroupsService } from './groups.service';
 
@@ -24,6 +30,8 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
 import { ParseObjectIdPipe } from 'src/common/pipes/parse-object-id.pipe';
 
+@ApiTags('Groups')
+@ApiBearerAuth('bearer-auth')
 @Controller('groups')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.INSTRUCTOR)
@@ -31,6 +39,12 @@ export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   // POST /groups
+  @ApiOperation({ summary: 'Create a new student group' })
+  @ApiResponse({ status: 201, description: 'Group created successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or duplicate name',
+  })
   @Post()
   create(
     @CurrentUser() user: JwtPayload,
@@ -40,6 +54,10 @@ export class GroupsController {
   }
 
   // GET /groups
+  @ApiOperation({
+    summary: 'Get all groups created by instructor with pagination',
+  })
+  @ApiResponse({ status: 200, description: 'Paginated list of groups' })
   @Get()
   findAll(
     @CurrentUser() user: JwtPayload,
@@ -49,6 +67,9 @@ export class GroupsController {
   }
 
   // GET /groups/:id
+  @ApiOperation({ summary: 'Get single group details by ID' })
+  @ApiResponse({ status: 200, description: 'Group details' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
   @Get(':id')
   findOne(
     @CurrentUser() user: JwtPayload,
@@ -58,6 +79,11 @@ export class GroupsController {
   }
 
   // PUT /groups/:id
+  @ApiOperation({
+    summary: 'Update group name, description, or assigned learners',
+  })
+  @ApiResponse({ status: 200, description: 'Group updated successfully' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
   @Put(':id')
   update(
     @CurrentUser() user: JwtPayload,
@@ -68,6 +94,9 @@ export class GroupsController {
   }
 
   // DELETE /groups/:id
+  @ApiOperation({ summary: 'Delete group by ID' })
+  @ApiResponse({ status: 200, description: 'Group deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Group not found' })
   @Delete(':id')
   remove(
     @CurrentUser() user: JwtPayload,

@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { Group, GroupDocument } from 'src/schemas/group.schema';
-
 import { Quiz, QuizDocument } from 'src/schemas/quiz.schema';
-
 import { QuizResult, QuizResultDocument } from 'src/schemas/quiz-result.schema';
+import { IDashboardService } from './interfaces/dashboard-service.interface';
 
 @Injectable()
-export class DashboardService {
+export class DashboardService implements IDashboardService {
   constructor(
     @InjectModel(Group.name)
     private readonly groupModel: Model<GroupDocument>,
@@ -64,13 +63,95 @@ export class DashboardService {
         enrolledCount: quiz.totalEnrolledStudents,
       })),
 
-      recentResults: recentResults.map((result: any) => ({
-        id: result._id,
-        quizTitle: result.quizId.title,
-        score: result.totalScore,
-        percentage: result.scorePercentage,
-        submittedAt: result.submittedAt,
+      recentResults: recentResults.map(
+        (result: QuizResultDocument & { quizId?: { title?: string } }) => ({
+          id: result._id,
+          quizTitle: result.quizId ? result.quizId.title : 'Deleted Quiz',
+          score: result.totalScore,
+          percentage: result.scorePercentage,
+          submittedAt: result.submittedAt,
+        }),
+      ),
+    };
+  }
+
+  async instructorDashboard(instructorId: string) {
+    const instructorObjId = new Types.ObjectId(instructorId);
+
+    // Fetch all quizzes created by this instructor
+    const instructorQuizzes = await this.quizModel.find({
+      instructorId: instructorObjId,
+    });
+    const quizIds = instructorQuizzes.map((q) => q._id);
+
+    // Upcoming quizzes created by instructor
+    const upcomingQuizzes = await this.quizModel
+      .find({
+        instructorId: instructorObjId,
+        scheduledDateTime: { $gt: new Date() },
+      })
+      .sort({ scheduledDateTime: 1 })
+      .limit(5)
+      .select('title scheduledDateTime totalEnrolledStudents code status');
+
+    // Aggregated top performing students for instructor's quizzes
+    const topStudentsAgg = await this.quizResultModel.aggregate([
+      { $match: { quizId: { $in: quizIds } } },
+      {
+        $group: {
+          _id: '$learnerId',
+          averageScorePercentage: { $avg: '$scorePercentage' },
+          totalQuizzesTaken: { $sum: 1 },
+          lastAttemptAt: { $max: '$submittedAt' },
+        },
+      },
+      { $sort: { averageScorePercentage: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'studentInfo',
+        },
+      },
+      { $unwind: { path: '$studentInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          studentId: '$_id',
+          firstName: '$studentInfo.firstName',
+          lastName: '$studentInfo.lastName',
+          email: '$studentInfo.email',
+          averageScorePercentage: { $round: ['$averageScorePercentage', 2] },
+          totalQuizzesTaken: 1,
+          lastAttemptAt: 1,
+        },
+      },
+    ]);
+
+    const totalResults = await this.quizResultModel.countDocuments({
+      quizId: { $in: quizIds },
+    });
+
+    const activeQuizzesCount = await this.quizModel.countDocuments({
+      instructorId: instructorObjId,
+      scheduledDateTime: { $gt: new Date() },
+    });
+
+    return {
+      overview: {
+        totalQuizzesCreated: instructorQuizzes.length,
+        totalCompletedAttempts: totalResults,
+        activeUpcomingQuizzes: activeQuizzesCount,
+      },
+      upcomingQuizzes: upcomingQuizzes.map((quiz) => ({
+        id: quiz._id,
+        title: quiz.title,
+        scheduledDateTime: quiz.scheduledDateTime,
+        code: quiz.code,
+        status: quiz.status,
       })),
+      topStudents: topStudentsAgg,
     };
   }
 }

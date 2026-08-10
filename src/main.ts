@@ -31,7 +31,15 @@ async function bootstrap() {
 
   app.enableCors({
     origin: origins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept-Language',
+      'X-Requested-With',
+    ],
     credentials: true,
+    maxAge: 86400,
   });
 
   // Global Pipes, Filters, Interceptors
@@ -60,6 +68,12 @@ async function bootstrap() {
     .addTag('Groups', 'Group management endpoints')
     .addTag('Questions', 'Question bank management endpoints')
     .addTag('Quizzes', 'Quiz management and code generation endpoints')
+    .addTag('Dashboard', 'Learner and Instructor dashboard metrics & analytics')
+    .addTag('Results', 'Quiz results and performance analytics')
+    .addTag(
+      'Quiz Attempts',
+      'Quiz participation, live sessions, and submission endpoints',
+    )
     .addTag('Students', 'Student management endpoints')
     .addBearerAuth(
       {

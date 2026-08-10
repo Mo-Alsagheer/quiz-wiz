@@ -3,12 +3,18 @@ import { ResultsController } from './results.controller';
 import { ResultsService } from './results.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { QuizResult, QuizResultSchema } from 'src/schemas/quiz-result.schema';
+import { Quiz, QuizSchema } from 'src/schemas/quiz.schema';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       {
         name: QuizResult.name,
         schema: QuizResultSchema,
+      },
+      {
+        name: Quiz.name,
+        schema: QuizSchema,
       },
     ]),
   ],

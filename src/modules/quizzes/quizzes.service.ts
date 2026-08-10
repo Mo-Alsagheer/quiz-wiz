@@ -9,9 +9,10 @@ import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { QuizStatus } from 'src/common/enums/quiz.status.enum';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SortOrder } from 'mongoose';
+import { IQuizzesService } from './interfaces/quizzes-service.interface';
 
 @Injectable()
-export class QuizzesService {
+export class QuizzesService implements IQuizzesService {
   constructor(
     @InjectModel(Quiz.name)
     private readonly quizModel: Model<QuizDocument>,

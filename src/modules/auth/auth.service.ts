@@ -17,9 +17,10 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthResponseDto, MessageResponseDto } from './dto/auth-response.dto';
+import { IAuthService } from './interfaces/auth-service.interface';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,

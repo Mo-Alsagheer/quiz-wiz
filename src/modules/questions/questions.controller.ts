@@ -26,6 +26,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { UserRole } from 'src/common/enums/user-role.enum';
 import { JwtPayload } from 'src/common/interfaces/jwt-payload.interface';
 import { ParseObjectIdPipe } from 'src/common/pipes/parse-object-id.pipe';
+import { AuditLog } from 'src/common/decorators/audit-log.decorator';
 
 @ApiTags('Questions')
 @ApiBearerAuth('bearer-auth')
@@ -36,9 +37,12 @@ export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) {}
 
   // POST /questions
-  @ApiOperation({ summary: 'Create a new question in the question bank' })
+  @ApiOperation({
+    summary: 'Create a new question (MULTIPLE_CHOICE, TRUE_FALSE, or ESSAY)',
+  })
   @ApiResponse({ status: 201, description: 'Question created successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
+  @AuditLog('CREATE_QUESTION')
   @Post()
   create(
     @CurrentUser() user: JwtPayload,
@@ -49,7 +53,8 @@ export class QuestionsController {
 
   // GET /questions
   @ApiOperation({
-    summary: 'Get all questions with optional filters and pagination',
+    summary:
+      'Get all questions with optional type, difficulty, category, search filters, and pagination',
   })
   @ApiResponse({ status: 200, description: 'Paginated list of questions' })
   @Get()
@@ -76,6 +81,7 @@ export class QuestionsController {
   @ApiOperation({ summary: 'Update an existing question' })
   @ApiResponse({ status: 200, description: 'Question updated successfully' })
   @ApiResponse({ status: 404, description: 'Question not found' })
+  @AuditLog('UPDATE_QUESTION')
   @Put(':id')
   update(
     @CurrentUser() user: JwtPayload,
@@ -95,6 +101,7 @@ export class QuestionsController {
     description: 'Cannot delete question used in completed quizzes',
   })
   @ApiResponse({ status: 404, description: 'Question not found' })
+  @AuditLog('DELETE_QUESTION')
   @Delete(':id')
   remove(
     @CurrentUser() user: JwtPayload,

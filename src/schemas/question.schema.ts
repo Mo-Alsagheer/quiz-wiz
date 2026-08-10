@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { CategoryType } from 'src/common/enums/category-enum';
 import { DifficultyLevel } from 'src/common/enums/difficulty-enum';
+import { QuestionType } from 'src/common/enums/question-type.enum';
 
 export type QuestionDocument = HydratedDocument<Question>;
 
@@ -10,6 +11,13 @@ export type QuestionDocument = HydratedDocument<Question>;
   versionKey: false,
 })
 export class Question {
+  @Prop({
+    enum: QuestionType,
+    default: QuestionType.MULTIPLE_CHOICE,
+    index: true,
+  })
+  type: QuestionType;
+
   @Prop({
     required: true,
     trim: true,
@@ -29,35 +37,29 @@ export class Question {
       {
         option: {
           type: String,
-          enum: ['A', 'B', 'C', 'D'],
           required: true,
         },
         text: {
           type: String,
           required: true,
-          minlength: 2,
-          maxlength: 200,
+          minlength: 1,
+          maxlength: 500,
         },
       },
     ],
-    required: true,
-    validate: {
-      validator(value: any[]) {
-        return value.length === 4;
-      },
-      message: 'Question must have exactly 4 answers.',
-    },
+    default: [],
   })
   answers: {
-    option: 'A' | 'B' | 'C' | 'D';
+    option: string;
     text: string;
   }[];
 
   @Prop({
-    required: true,
-    enum: ['A', 'B', 'C', 'D'],
+    type: String,
+    required: false,
+    trim: true,
   })
-  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  correctAnswer?: string;
 
   @Prop({
     required: true,
@@ -81,6 +83,11 @@ export class Question {
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);
+
+QuestionSchema.index({
+  instructorId: 1,
+  type: 1,
+});
 
 QuestionSchema.index({
   instructorId: 1,

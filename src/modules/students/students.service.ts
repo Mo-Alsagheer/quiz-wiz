@@ -15,9 +15,10 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
+import { IStudentsService } from './interfaces/students-service.interface';
 
 @Injectable()
-export class StudentsService {
+export class StudentsService implements IStudentsService {
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
@@ -62,7 +63,7 @@ export class StudentsService {
         email: student.email,
         phone: student.phone,
         role: student.role,
-        createdAt: (student as any).createdAt,
+        createdAt: (student as UserDocument & { createdAt?: Date }).createdAt,
       },
       temporaryPassword: tempPassword,
     };
@@ -74,7 +75,7 @@ export class StudentsService {
     const clampedLimit = Math.min(Math.max(limit, 1), 100);
     const clampedPage = Math.max(page, 1);
 
-    const filter: Record<string, any> = {
+    const filter: Record<string, unknown> = {
       role: UserRole.LEARNER,
       instructorId: new Types.ObjectId(instructorId),
     };
@@ -152,7 +153,7 @@ export class StudentsService {
         image: student.image,
         averageScore: stats.averageScore,
         totalQuizzesTaken: stats.totalQuizzesTaken,
-        createdAt: (student as any).createdAt,
+        createdAt: (student as UserDocument & { createdAt?: Date }).createdAt,
       };
     });
 
@@ -204,7 +205,7 @@ export class StudentsService {
       image: student.image,
       averageScore,
       totalQuizzesTaken: stats.totalQuizzesTaken || 0,
-      createdAt: (student as any).createdAt,
+      createdAt: (student as UserDocument & { createdAt?: Date }).createdAt,
     };
   }
 

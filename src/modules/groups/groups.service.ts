@@ -11,9 +11,10 @@ import { UserRole } from 'src/common/enums/user-role.enum';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { IGroupsService } from './interfaces/groups-service.interface';
 
 @Injectable()
-export class GroupsService {
+export class GroupsService implements IGroupsService {
   constructor(
     @InjectModel(Group.name)
     private readonly groupModel: Model<GroupDocument>,
@@ -59,8 +60,8 @@ export class GroupsService {
         .findById(group._id)
         .populate('learners', 'firstName lastName email')
         .populate('instructorId', 'firstName lastName email');
-    } catch (error: any) {
-      if (error?.code === 11000) {
+    } catch (error: unknown) {
+      if ((error as { code?: number })?.code === 11000) {
         throw new BadRequestException('Group name already exists');
       }
       throw error;
@@ -174,8 +175,8 @@ export class GroupsService {
 
     try {
       await group.save();
-    } catch (error: any) {
-      if (error?.code === 11000) {
+    } catch (error: unknown) {
+      if ((error as { code?: number })?.code === 11000) {
         throw new BadRequestException('Group name already exists');
       }
       throw error;

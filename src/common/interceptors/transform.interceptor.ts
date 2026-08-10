@@ -41,12 +41,12 @@ export class TransformInterceptor<T> implements NestInterceptor<
           'message' in data &&
           'data' in data
         ) {
-          const obj = data as Record<string, any>;
-          message = obj.message;
-          responseData = obj.data;
+          const obj = data as Record<string, unknown>;
+          message = obj['message'] as string | undefined;
+          responseData = obj['data'] as T;
         }
 
-        const result: Record<string, any> = {
+        const result: Record<string, unknown> = {
           status: 'success',
         };
 
@@ -56,7 +56,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
         result.data = responseData ?? null;
 
-        return result as ResponseEnvelope<T>;
+        return result as unknown as ResponseEnvelope<T>;
       }),
     );
   }
